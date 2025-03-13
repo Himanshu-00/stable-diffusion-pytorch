@@ -1,6 +1,6 @@
 # stable-diffusion-pytorch
 
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)]
+![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)
 
 Yet another PyTorch implementation of [Stable Diffusion](https://stability.ai/blog/stable-diffusion-public-release).
 
