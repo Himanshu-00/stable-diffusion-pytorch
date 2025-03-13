@@ -4,7 +4,7 @@
 
 Yet another PyTorch implementation of [Stable Diffusion](https://stability.ai/blog/stable-diffusion-public-release).
 
-I tried my best to follow up original SD architecture and easy to read. Configs are hard-coded (based on Stable Diffusion v1.x). Loops are unrolled when that shape makes more sense.
+I tried my best to follow up original SD architecture and easy to read. Configs are hard-coded (based on Stable Diffusion v1.x).
 
 
 Heavily referred to following repositories. Big kudos to them!
@@ -20,6 +20,10 @@ Heavily referred to following repositories. Big kudos to them!
 * Pillow
 * regex
 * tqdm
+
+## TODO
+* SDXL Support
+* InPainting
 
 ## How to Install
 
