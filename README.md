@@ -10,8 +10,9 @@ I tried my best to follow up original SD architecture and easy to read. Configs 
 Heavily referred to following repositories. Big kudos to them!
 
 * [CompVis/stable-diffusion](https://github.com/CompVis/stable-diffusion)
-* [huggingface/transformers](https://github.com/huggingface/transformers)
+* [huggingface/diffusers/](https://github.com/huggingface/diffusers/)
 * [hkproj/pytorch-stable-diffusion](https://github.com/hkproj/pytorch-stable-diffusion)
+* [kjsman/stable-diffusion-pytorch](https://github.com/kjsman/stable-diffusion-pytorch)
 
 ## Dependencies
 
