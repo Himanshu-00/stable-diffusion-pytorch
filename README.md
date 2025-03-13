@@ -1,4 +1,4 @@
-# stable-diffusion-pytorch
+# Stable_diffusion_pytorch
 
 ![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)
 
