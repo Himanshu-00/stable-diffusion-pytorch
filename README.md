@@ -21,6 +21,7 @@ Heavily referred to following repositories. Big kudos to them!
 * Pillow
 * regex
 * tqdm
+* safetensors
 
 ## TODO
 * SDXL Support
