@@ -4,3 +4,4 @@
 img/results
 sd1_tokenizer_/v1-5-pruned-emaonly.ckpt
 stable-diffusion/__pycache__
+stable_diffusion/samplers/__pycache__

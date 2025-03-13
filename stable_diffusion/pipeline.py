@@ -3,8 +3,7 @@
 import torch
 import numpy as np
 from tqdm import tqdm
-from ddpm import DDPMSampler
-from samplers import KEulerAncestralSampler, KEulerSampler, KLMSSampler
+from samplers import KEulerAncestralSampler, KEulerSampler, KLMSSampler, DDPMSampler
 
 WIDTH = 512
 HEIGHT = 512
@@ -174,10 +173,3 @@ def rescale(x, old_range, new_range, clamp=False):
         x = x.clamp(new_min, new_max)
     return x
 
-# def get_time_embedding(timestep):
-#     # Shape: (160,)
-#     freqs = torch.pow(10000, -torch.arange(start=0, end=160, dtype=torch.float32) / 160) 
-#     # Shape: (1, 160)
-#     x = torch.tensor([timestep], dtype=torch.float32)[:, None] * freqs[None]
-#     # Shape: (1, 160 * 2)
-#     return torch.cat([torch.cos(x), torch.sin(x)], dim=-1)

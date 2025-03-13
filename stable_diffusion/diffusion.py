@@ -1,4 +1,4 @@
-# diffusion.py contains the implementation of the TimeEmbedding, UNET_ResidualBlock, UNET_AttentionBlock, Upsample, SwitchSequential, UNET, UNET_OutputLayer and Diffusion classes.
+# diffusion.py contains the implementation of the TimeEmbedding, UNET_ResidualBlock, UNET_AttentionBlock, Upsample, SwitchSequential & UNET.
 
 # modified version of the original code from the CompVis/stable-diffusion repository
 
