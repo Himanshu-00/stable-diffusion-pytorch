@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Stable_diffusion_pytorch
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Himanshu-00/stable-diffusion-pytorch/blob/main/img/demo/demo_file.ipynb)
