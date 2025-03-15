@@ -82,14 +82,15 @@ class CLIP(nn.Module):
 
         self.layernorm = nn.LayerNorm(768)
     
-    def forward(self, tokens: torch.LongTensor) -> torch.FloatTensor:
+    def forward(self, tokens: torch.LongTensor, clip_skip: int = 0) -> torch.FloatTensor:
         tokens = tokens.type(torch.long)
         
         # (Batch_Size, Seq_Len) -> (Batch_Size, Seq_Len, Dim)
         state = self.embedding(tokens)
+        stop_at = len(self.layers) - clip_skip
 
         # Apply encoder layers similar to the Transformer's encoder.
-        for layer in self.layers: 
+        for layer in self.layers[:stop_at]: 
             # (Batch_Size, Seq_Len, Dim) -> (Batch_Size, Seq_Len, Dim)
             state = layer(state)
         # (Batch_Size, Seq_Len, Dim) -> (Batch_Size, Seq_Len, Dim)

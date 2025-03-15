@@ -83,7 +83,7 @@ class FeedForward(nn.Module):
 
 
 class BasicTransformerBlock(nn.Module):
-    def __init__(self, dim, n_heads, d_head, dropout=0., context_dim=None, gated_ff=True, checkpoint=True):
+    def __init__(self, dim, n_heads, d_head, dropout=0., context_dim=None, gated_ff=True):
         super().__init__()
         self.attn1 = CrossAttention(query_dim=dim, heads=n_heads, dim_head=d_head, dropout=dropout)  # is a self-attention
         self.ff = FeedForward(dim, dropout=dropout, glu=gated_ff)
@@ -92,7 +92,6 @@ class BasicTransformerBlock(nn.Module):
         self.norm1 = nn.LayerNorm(dim)
         self.norm2 = nn.LayerNorm(dim)
         self.norm3 = nn.LayerNorm(dim)
-        self.checkpoint = checkpoint
 
     def forward(self, x, context=None):
         x = self.attn1(self.norm1(x)) + x
@@ -104,13 +103,6 @@ class BasicTransformerBlock(nn.Module):
 
 
 class SpatialTransformer(nn.Module):
-    """
-    Transformer block for image-like data.
-    First, project the input (aka embedding)
-    and reshape to b, t, d.
-    Then apply standard transformer action.
-    Finally, reshape to image
-    """
     def __init__(self, in_channels, n_heads, d_head,
                  depth=1, dropout=0., context_dim=None):
         super().__init__()

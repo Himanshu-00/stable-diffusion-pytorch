@@ -5,10 +5,6 @@ import numpy as np
 from tqdm import tqdm
 from samplers import KEulerAncestralSampler, KEulerSampler, KLMSSampler, DDPMSampler
 
-WIDTH = 512
-HEIGHT = 512
-LATENTS_WIDTH = WIDTH // 8
-LATENTS_HEIGHT = HEIGHT // 8
 
 def generate(
     prompt,
@@ -19,11 +15,14 @@ def generate(
     cfg_scale=7.5,
     sampler_name="ddpm",
     n_inference_steps=50,
+    clip_skip=0,
     models={},
     seed=None,
     device=None,
     idle_device=None,
     tokenizer=None,
+    width=512,
+    height=512,
 ):
     with torch.no_grad():
         if not 0 < strength <= 1:
@@ -33,6 +32,14 @@ def generate(
             to_idle = lambda x: x.to(idle_device)
         else:
             to_idle = lambda x: x
+
+         # Validate dimensions
+        if width % 8 != 0 or height % 8 != 0:
+            raise ValueError("Width and height must be multiples of 8")
+            
+        # Calculate latent dimensions based on input size
+        latents_width = width // 8
+        latents_height = height // 8
 
         # Initialize random number generator according to the seed specified
         generator = torch.Generator(device=device)
@@ -52,7 +59,7 @@ def generate(
             # (Batch_Size, Seq_Len)
             cond_tokens = torch.tensor(cond_tokens, dtype=torch.long, device=device)
             # (Batch_Size, Seq_Len) -> (Batch_Size, Seq_Len, Dim)
-            cond_context = clip(cond_tokens)
+            cond_context = clip(cond_tokens, clip_skip=clip_skip)
             # Convert into a list of length Seq_Len=77
             uncond_tokens = tokenizer.batch_encode_plus(
                 [uncond_prompt], padding="max_length", max_length=77
@@ -60,7 +67,7 @@ def generate(
             # (Batch_Size, Seq_Len)
             uncond_tokens = torch.tensor(uncond_tokens, dtype=torch.long, device=device)
             # (Batch_Size, Seq_Len) -> (Batch_Size, Seq_Len, Dim)
-            uncond_context = clip(uncond_tokens)
+            uncond_context = clip(uncond_tokens, clip_skip=clip_skip)
             # (Batch_Size, Seq_Len, Dim) + (Batch_Size, Seq_Len, Dim) -> (2 * Batch_Size, Seq_Len, Dim)
             context = torch.cat([cond_context, uncond_context])
         else:
@@ -71,7 +78,8 @@ def generate(
             # (Batch_Size, Seq_Len)
             tokens = torch.tensor(tokens, dtype=torch.long, device=device)
             # (Batch_Size, Seq_Len) -> (Batch_Size, Seq_Len, Dim)
-            context = clip(tokens)
+            context = clip(tokens, clip_skip=clip_skip)
+            
         to_idle(clip)
 
         if sampler_name == "ddpm":
@@ -88,13 +96,13 @@ def generate(
             raise ValueError("Unknown sampler value %s. ")
 
 
-        latents_shape = (1, 4, LATENTS_HEIGHT, LATENTS_WIDTH)
+        latents_shape = (1, 4, latents_height, latents_width)
 
         if input_image:
             encoder = models["encoder"]
             encoder.to(device)
 
-            input_image_tensor = input_image.resize((WIDTH, HEIGHT))
+            input_image_tensor = input_image.resize((width, height))
             # (Height, Width, Channel)
             input_image_tensor = np.array(input_image_tensor)
             # (Height, Width, Channel) -> (Height, Width, Channel)
