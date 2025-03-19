@@ -6,5 +6,5 @@ output/results-
 sd1_tokenizer_/v1-5-pruned-emaonly.ckpt
 stable_diffusion/checkpoints/sd-v1-5-inpainting.ckpt
 stable_diffusion/checkpoints/majicmixRealistic_v7.safetensors
-stable-diffusion/__pycache__
+stable_diffusion/__pycache__
 stable_diffusion/samplers/__pycache__
