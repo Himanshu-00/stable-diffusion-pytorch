@@ -60,6 +60,15 @@ def main():
                         type=int, 
                         default=3434887957
                         )
+<<<<<<< HEAD
+=======
+    
+    parser.add_argument(
+                        '--use_karras', 
+                        action='store_true', 
+                        )
+
+>>>>>>> 250a526 (fix)
 
 
     args = parser.parse_args()
@@ -78,7 +87,11 @@ def main():
     print(f"Using device: {DEVICE}")
 
     tokenizer = CLIPTokenizer("sd1_tokenizer_/tokenizer_vocab.json", merges_file="sd1_tokenizer_/tokenizer_merges.txt")
+<<<<<<< HEAD
     model_file = "/Users/himanshuvinchurkar/Documents/Project/ComfyUI/models/checkpoints/majicmixRealistic_v7.safetensors"
+=======
+    model_file = "stable_diffusion/checkpoints/majicmixRealistic_v7.safetensors"
+>>>>>>> 250a526 (fix)
     models = model_loader.preload_models_from_standard_weights(model_file, DEVICE)
 
     # TEXT TO IMAGE PROMPTS
@@ -91,10 +104,17 @@ def main():
     cfg_scale = 7  # min: 1, max: 14
 
     # IMAGE TO IMAGE
+<<<<<<< HEAD
     # prompt = ""
 
     input_image = None
     # image_path = "img/results/o29.png"
+=======
+    # prompt = "1girl,face,curly red hair,"
+
+    input_image = None
+    # image_path = "output/results/o7.png"
+>>>>>>> 250a526 (fix)
     # input_image = Image.open(image_path)
     # Higher values means more noise will be added to the input image, so the result will be further from the input image.
     # Lower values means less noise is added to the input image, so output will be closer to the input image.
@@ -102,9 +122,17 @@ def main():
 
     # SAMPLER
 
+<<<<<<< HEAD
     sampler = "ddpm"
     num_inference_steps = 20
     seed = 64244261092
+=======
+    #As of now, DPM-Solver++ does not have support for img2img functionality. Please use ddpm for img2img
+    sampler = "dpm_solver++"  
+    num_inference_steps = 20
+    seed = 64244261092
+ 
+>>>>>>> 250a526 (fix)
 
 
     if args.prompt is None:

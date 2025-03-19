@@ -188,6 +188,7 @@ python3 stable_diffusion/Inference.py \
 
 All codes on this repository are licensed with MIT License. Please see LICENSE file.
 
+<<<<<<< HEAD
 Note that checkpoint files of Stable Diffusion are licensed with [CreativeML Open RAIL-M](https://huggingface.co/spaces/CompVis/stable-diffusion-license) License. It has use-based restriction caluse, so you'd better read it.
 >>>>>>> c346bfe (update)
 =======
@@ -384,3 +385,6 @@ All codes on this repository are licensed with MIT License. Please see LICENSE f
 Note that checkpoint files of Stable Diffusion are licensed with [CreativeML Open RAIL-M](https://huggingface.co/spaces/CompVis/stable-diffusion-license) License. It has use-based restriction caluse, so you'd better read it.
 >>>>>>> c346bfe (update)
 >>>>>>> cae3538 (update)
+=======
+Note that checkpoint files of Stable Diffusion are licensed with [CreativeML Open RAIL-M](https://huggingface.co/spaces/CompVis/stable-diffusion-license) License. It has use-based restriction caluse, so you'd better read it.
+>>>>>>> 250a526 (fix)

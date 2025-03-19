@@ -3,7 +3,11 @@
 import torch
 import numpy as np
 from tqdm import tqdm
+<<<<<<< HEAD
 from samplers import KEulerAncestralSampler, KEulerSampler, KLMSSampler, DDPMSampler
+=======
+from samplers import KEulerAncestralSampler, KEulerSampler, KLMSSampler, DDPMSampler, DPMSolverMultistepScheduler
+>>>>>>> 250a526 (fix)
 
 
 def generate(
@@ -23,6 +27,10 @@ def generate(
     tokenizer=None,
     width=512,
     height=512,
+<<<<<<< HEAD
+=======
+    use_karras = None
+>>>>>>> 250a526 (fix)
 ):
     with torch.no_grad():
         if not 0 < strength <= 1:
@@ -85,6 +93,12 @@ def generate(
         if sampler_name == "ddpm":
             sampler = DDPMSampler(generator)
             sampler.set_inference_timesteps(n_inference_steps)
+<<<<<<< HEAD
+=======
+        elif sampler_name == "dpm_solver++":
+            sampler = DPMSolverMultistepScheduler(use_karras_sigmas=use_karras)
+            sampler.set_inference_timesteps(n_inference_steps)
+>>>>>>> 250a526 (fix)
         elif sampler_name == "k_lms":
             sampler = KLMSSampler(n_inference_steps=n_inference_steps)
         elif sampler_name == "k_euler":
@@ -114,10 +128,30 @@ def generate(
             # (Batch_Size, Height, Width, Channel) -> (Batch_Size, Channel, Height, Width)
             input_image_tensor = input_image_tensor.permute(0, 3, 1, 2)
 
+<<<<<<< HEAD
             # (Batch_Size, 4, Latents_Height, Latents_Width)
             encoder_noise = torch.randn(latents_shape, generator=generator, device=device)
             # (Batch_Size, 4, Latents_Height, Latents_Width)
             latents = encoder(input_image_tensor, encoder_noise)
+=======
+            # # (Batch_Size, 4, Latents_Height, Latents_Width)
+            # Get encoder output (8 channels)
+            encoder_output = encoder(input_image_tensor)
+            
+            # Split into mean and log variance (4 channels each)
+            mean, log_variance = torch.chunk(encoder_output, 2, dim=1)
+            log_variance = torch.clamp(log_variance, -30, 20)
+            variance = log_variance.exp()
+            stdev = variance.sqrt()
+            
+            # Generate noise for latent sampling
+            encoder_noise = torch.randn(mean.shape, generator=generator, device=device)
+            
+            # Sample latents using reparameterization trick
+            latents = mean + stdev * encoder_noise
+            
+           
+>>>>>>> 250a526 (fix)
 
             # Add noise to the latents (the encoded input image)
             # (Batch_Size, 4, Latents_Height, Latents_Width)

@@ -1,5 +1,8 @@
 # diffusion.py contains the implementation of the TimeEmbedding, UNET_ResidualBlock, UNET_AttentionBlock, Upsample, SwitchSequential & UNET.
+<<<<<<< HEAD
 
+=======
+>>>>>>> 250a526 (fix)
 # modified version of the original code from the CompVis/stable-diffusion repository
 
 import math
@@ -213,12 +216,21 @@ class SwitchSequential(nn.Sequential):
         return x
 
 class UNET(nn.Module):
+<<<<<<< HEAD
     def __init__(self, model_channels=320, out_channels=4, dims=2):
         super().__init__()
         self.dims = dims
         self.out_channels = out_channels
         self.model_channels = model_channels
         # self.time_embedding = TimeEmbedding(320)
+=======
+    def __init__(self, model_channels=320, out_channels=4, in_channels=4, dims=2):
+        super().__init__()
+        self.dims = dims
+        self.out_channels = out_channels
+        self.in_channels = in_channels
+        self.model_channels = model_channels
+>>>>>>> 250a526 (fix)
 
   
         time_embed_dim = self.model_channels * 4
@@ -230,7 +242,11 @@ class UNET(nn.Module):
         
         # Direct ModuleLists with original parameter paths
         self.input_blocks = nn.ModuleList([
+<<<<<<< HEAD
             SwitchSequential(nn.Conv2d(4, 320, kernel_size=3, padding=1)),
+=======
+            SwitchSequential(nn.Conv2d(in_channels, 320, kernel_size=3, padding=1)),
+>>>>>>> 250a526 (fix)
             SwitchSequential(UNET_ResidualBlock(320, 320), SpatialTransformer(320, n_heads=8, d_head=40, depth=1, context_dim=768)),
             SwitchSequential(UNET_ResidualBlock(320, 320), SpatialTransformer(320, n_heads=8, d_head=40, depth=1, context_dim=768)),
             SwitchSequential(nn.Conv2d(320, 320, kernel_size=3, stride=2, padding=1)),

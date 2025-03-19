@@ -98,4 +98,9 @@ class VAE_Encoder(nn.Module):
         h = self.norm_out(h)
         h = nonlinearity(h)
         h = self.conv_out(h)
+<<<<<<< HEAD
+=======
+        
+        h *= 0.18215
+>>>>>>> 250a526 (fix)
         return h
