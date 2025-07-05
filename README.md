@@ -85,7 +85,7 @@ python3 stable_diffusion/Inference.py \
   --prompt "Watercolor painting of a mountain landscape" \
   --input_image input.jpg \
   --strength 0.85 \
-  --sampler ddim # 'DDPM', 'Euler A' and more are  avaliable 
+  --sampler ddpm # 'DDPM', 'Euler A' and more are  avaliable 
 ```
 
 ## LICENSE
