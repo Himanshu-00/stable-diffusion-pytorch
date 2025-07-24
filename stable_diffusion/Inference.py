@@ -91,7 +91,7 @@ def main():
     # prompt = "An orange cat playing with tennis balls in a green backyard, highly detailed, realistic, ultra sharp, cinematic, 100mm lens, 8k resolution."
     # prompt = "A close up of man posing for a picture on a tropical island holding a coctail in hand, highly detailed, realistic, ultra sharp, cinematic, 100mm lens, 8k resolution."
     # prompt = "instagram photo, front shot, portrait photo of a 24 y.o woman, wearing dress, beautiful face, cinematic shot, dark shot"
-    prompt = "a cat with heterochromia"
+    prompt = "a cat and dog with sun glasses"
     # uncond_prompt = "worst quality,low quality,normal quality,lowres,watermark," 
     uncond_prompt = "(worst quality:2),(low quality:2),(normal quality:2),lowres,watermark," 
     do_cfg = True
