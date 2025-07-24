@@ -2,9 +2,9 @@
 
 import model_loader
 import pipeline
+import model_converter
 from PIL import Image
 from pathlib import Path
-from transformers import CLIPTokenizer
 import torch
 import argparse
 
@@ -83,18 +83,19 @@ def main():
         DEVICE = "mps"
     print(f"Using device: {DEVICE}")
 
-    tokenizer = CLIPTokenizer("sd1_tokenizer_/tokenizer_vocab.json", merges_file="sd1_tokenizer_/tokenizer_merges.txt")
-    model_file = "stable_diffusion/checkpoints/majicmixRealistic_v7.safetensors"
-    models = model_loader.preload_models_from_standard_weights(model_file, DEVICE)
+    model_file = "/Users/himanshuvinchurkar/Documents/Project/ComfyUI/models/checkpoints/juggernautXL_v8Rundiffusion.safetensors"
+    models = model_loader.preload_models_from_standard_weights(model_file, DEVICE, dtype=torch.float16)
+    isSDXL = model_converter.detect_sdxl_checkpoint(model_file)
 
     # TEXT TO IMAGE PROMPTS
     # prompt = "An orange cat playing with tennis balls in a green backyard, highly detailed, realistic, ultra sharp, cinematic, 100mm lens, 8k resolution."
     # prompt = "A close up of man posing for a picture on a tropical island holding a coctail in hand, highly detailed, realistic, ultra sharp, cinematic, 100mm lens, 8k resolution."
     # prompt = "instagram photo, front shot, portrait photo of a 24 y.o woman, wearing dress, beautiful face, cinematic shot, dark shot"
-    prompt = "1girl,face,curly hair,sky blue hair,white background,"
+    prompt = "a cat with heterochromia"
+    # uncond_prompt = "worst quality,low quality,normal quality,lowres,watermark," 
     uncond_prompt = "(worst quality:2),(low quality:2),(normal quality:2),lowres,watermark," 
     do_cfg = True
-    cfg_scale = 7  # min: 1, max: 14
+    cfg_scale = 7.5  # min: 1, max: 14
 
     # IMAGE TO IMAGE
     # prompt = "1girl,face,curly red hair,"
@@ -112,7 +113,7 @@ def main():
     sampler = "dpm_solver++"  
     num_inference_steps = 20
     seed = 64244261092
- 
+
 
 
     if args.prompt is None:
@@ -129,7 +130,10 @@ def main():
             models=models,
             device=DEVICE,
             idle_device="cpu",
-            tokenizer=tokenizer,
+            clip_skip=0,
+            width=1024 if isSDXL else 512,
+            height=1024 if isSDXL else 512,
+            dtype=torch.float16,
     )
     else:
         output_image = pipeline.generate(
@@ -145,10 +149,10 @@ def main():
             models=models,
             device=DEVICE,
             idle_device="cpu",
-            tokenizer=tokenizer,
             clip_skip=0,
-            width=512,
-            height=512
+            width=1024 if isSDXL else 512,
+            height=1024 if isSDXL else 512,
+            dtype=torch.float16,
         )
 
    

@@ -11,7 +11,7 @@ from decoder import VAE_AttentionBlock, VAE_ResidualBlock, Downsample, Normalize
 class VAE_Encoder(nn.Module):
     def __init__(self, *, ch=128, out_ch=8, ch_mult=(1, 2, 4, 4), num_res_blocks=2,
                  attn_resolutions=[], dropout=0.0, resamp_with_conv=True, in_channels=3,
-                 resolution=256, z_channels=4, double_z=True,
+                 resolution=256, z_channels=4, double_z=True, sdxl=None,
                  **ignore_kwargs):
         super().__init__()
         self.ch = ch
@@ -20,6 +20,7 @@ class VAE_Encoder(nn.Module):
         self.num_res_blocks = num_res_blocks
         self.resolution = resolution
         self.in_channels = in_channels
+        self.sdxl = sdxl
 
         # downsampling
         self.conv_in = torch.nn.Conv2d(in_channels,
@@ -99,5 +100,6 @@ class VAE_Encoder(nn.Module):
         h = nonlinearity(h)
         h = self.conv_out(h)
         
-        h *= 0.18215
+        h *= 0.13025 if self.sdxl else 0.18215
+        # h *=  0.13025
         return h

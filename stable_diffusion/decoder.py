@@ -3,7 +3,6 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
-from attention import SelfAttention
 import numpy as np
 
 def nonlinearity(x):
@@ -170,7 +169,7 @@ class Upsample(nn.Module):
 class VAE_Decoder(nn.Module):
     def __init__(self, *, ch=128, embed_dim=4, out_ch=3, ch_mult=(1,2,4,4), num_res_blocks=2,
                  attn_resolutions=[], dropout=0.0, resamp_with_conv=True, in_channels=3,
-                 resolution=256, z_channels=4, give_pre_end=False,
+                 resolution=256, z_channels=4, give_pre_end=False, sdxl=None,
                  **ignorekwargs):
         super().__init__()
         self.ch = ch
@@ -181,6 +180,7 @@ class VAE_Decoder(nn.Module):
         self.in_channels = in_channels
         self.give_pre_end = give_pre_end
         self.post_quant_conv = nn.Conv2d(embed_dim, z_channels, kernel_size=1)
+        self.sdxl = sdxl
 
         # compute in_ch_mult, block_in and curr_res at lowest res
         in_ch_mult = (1,)+tuple(ch_mult)
@@ -240,7 +240,8 @@ class VAE_Decoder(nn.Module):
                                         padding=1)
 
     def forward(self, z):
-        z /= 0.18215
+        z /= 0.13025 if self.sdxl else 0.18215
+        # z /=  0.13025
         #assert z.shape[1:] == self.z_shape[1:]
         self.last_z_shape = z.shape
 

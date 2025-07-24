@@ -3,7 +3,12 @@
 .ckpt
 .safetensors
 output/results-
+output/resultsN
+output/resultsP
+output/resultsO
 sd1_tokenizer_/v1-5-pruned-emaonly.ckpt
+stable_diffusion/test_sdxl.py
+stable_diffusion/test_text_encoders.py
 stable_diffusion/checkpoints/sd-v1-5-inpainting.ckpt
 stable_diffusion/checkpoints/majicmixRealistic_v7.safetensors
 stable_diffusion/__pycache__
