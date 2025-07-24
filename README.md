@@ -1,15 +1,24 @@
 # Stable_diffusion_pytorch
 
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Himanshu-00/stable-diffusion-pytorch/blob/main/output/demo/demo_file.ipynb)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Himanshu-00/stable-diffusion-pytorch/blob/version-2/output/demo/demo_file.ipynb)
 
-Yet another PyTorch implementation of [Stable Diffusion](https://stability.ai/blog/stable-diffusion-public-release).
+Yet another PyTorch implementation of [Stable Diffusion](https://stability.ai/blog/stable-diffusion-public-release) & A clean, modular PyTorch implementation of Stable Diffusion, now extended to support SDXL.
 
-I tried my best to follow up original SD architecture and easy to read. Configs are hard-coded (based on Stable Diffusion v1.x).
+
+# 🚀 Key Features
+### ✅ SD 1.x/2.x and **SDXL** Support
+
+This codebase supports both Stable Diffusion 1.x and the more advanced **SDXL**, which introduces a **dual-text_encoder architecture** for richer prompt understanding, higher-resolution outputs, and finer control — while remaining compatible with lighter 1.x models.
+
+# ⚡ Optimized for Apple Silicon
+
+Inference on M1 Macs is up to **90% faster**, thanks to reduced precision (float16) and efficient memory management.
 
 
 Heavily referred to following repositories. Big kudos to them!
 
 * [CompVis/stable-diffusion](https://github.com/CompVis/stable-diffusion)
+* [Stability-AI/generative-models](https://github.com/Stability-AI/generative-models.git)
 * [huggingface/diffusers/](https://github.com/huggingface/diffusers/)
 * [hkproj/pytorch-stable-diffusion](https://github.com/hkproj/pytorch-stable-diffusion)
 * [kjsman/stable-diffusion-pytorch](https://github.com/kjsman/stable-diffusion-pytorch)
@@ -24,7 +33,7 @@ Heavily referred to following repositories. Big kudos to them!
 * safetensors
 
 ## TODO
-* SDXL Support
+* LoRA(Low-Rank Adaptation)
 * InPainting
 
 ## How to Install
@@ -43,7 +52,7 @@ stable-diffusion-pytorch(-main)/
 │  ├─ samplers/
 └  ┴─ ...
 ```
-*Feel free to use any SDv1.x models*
+*Feel free to use any SDv1.x/SDXL models*
 
 ## How to Use
 
