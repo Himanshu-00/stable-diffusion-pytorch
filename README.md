@@ -35,6 +35,8 @@ Heavily referred to following repositories. Big kudos to them!
 ## TODO
 * LoRA(Low-Rank Adaptation)
 * InPainting
+* SD3
+* FLUX
 
 ## How to Install
 
