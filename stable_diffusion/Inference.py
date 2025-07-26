@@ -83,7 +83,7 @@ def main():
         DEVICE = "mps"
     print(f"Using device: {DEVICE}")
 
-    model_file = "/Users/himanshuvinchurkar/Documents/Project/ComfyUI/models/checkpoints/juggernautXL_v8Rundiffusion.safetensors"
+    model_file = "stable_diffusion/checkpoints/Juggernaut-XL_v9_RunDiffusionPhoto_v2.safetensors"
     models = model_loader.preload_models_from_standard_weights(model_file, DEVICE, dtype=torch.float16)
     isSDXL = model_converter.detect_sdxl_checkpoint(model_file)
 
@@ -91,11 +91,11 @@ def main():
     # prompt = "An orange cat playing with tennis balls in a green backyard, highly detailed, realistic, ultra sharp, cinematic, 100mm lens, 8k resolution."
     # prompt = "A close up of man posing for a picture on a tropical island holding a coctail in hand, highly detailed, realistic, ultra sharp, cinematic, 100mm lens, 8k resolution."
     # prompt = "instagram photo, front shot, portrait photo of a 24 y.o woman, wearing dress, beautiful face, cinematic shot, dark shot"
-    prompt = "a cat and dog with sun glasses"
+    prompt = "1girl,face,curly hair,sky blue hair,white background,"
     # uncond_prompt = "worst quality,low quality,normal quality,lowres,watermark," 
     uncond_prompt = "(worst quality:2),(low quality:2),(normal quality:2),lowres,watermark," 
     do_cfg = True
-    cfg_scale = 7.5  # min: 1, max: 14
+    cfg_scale = 7  # min: 1, max: 14
 
     # IMAGE TO IMAGE
     # prompt = "1girl,face,curly red hair,"

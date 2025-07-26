@@ -189,7 +189,17 @@ def load_from_standard_weights(input_file: str, device: str, sdxl=None) -> dict[
                 elif updated_key.startswith("label_emb.0.2."):
                     # Convert: label_emb.0.2 -> add_embedding.linear_2
                     updated_key = updated_key.replace("label_emb.0.2.", "add_embedding.linear_2.")
-        
+
+            # After your key mapping loop processes CLIP-L weights
+            if any(key.startswith("conditioner.embedders.0") for key in original_model.keys()):
+                
+                # Add position IDs for CLIP-L FOR OLD CHECKPOINTS (if not present in checkpoint)
+                clip_l_pos_key = "transformer.text_model.embeddings.position_ids"
+                if clip_l_pos_key not in converted['clip']:
+                    # Generate position IDs for CLIP-L
+                    position_ids = torch.arange(77).unsqueeze(0)
+                    converted['clip'][clip_l_pos_key] = position_ids
+                     
         if dest and updated_key:
             converted[dest][updated_key] = original_model[key]
 

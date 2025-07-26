@@ -11,5 +11,7 @@ stable_diffusion/test_sdxl.py
 stable_diffusion/test_text_encoders.py
 stable_diffusion/checkpoints/sd-v1-5-inpainting.ckpt
 stable_diffusion/checkpoints/majicmixRealistic_v7.safetensors
+stable_diffusion/checkpoints/Juggernaut-XL_v9_RunDiffusionPhoto_v2.safetensors
+stable_diffusion/checkpoints/juggernautXL_v8Rundiffusion.safetensors
 stable_diffusion/__pycache__
 stable_diffusion/samplers/__pycache__
