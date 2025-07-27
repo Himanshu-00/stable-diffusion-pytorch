@@ -352,13 +352,13 @@ def encode_prompt_sdxl(
             negative_embeds, negative_pooled = encode_with_weights(
                 negative_prompt, negative_prompt_2, 
                 tokenizer, tokenizer2, text_encoder, text_encoder2, 
-                device, False, None, None, clip_skip
+                device, None, None, None, clip_skip
             )
         else:
             negative_embeds, negative_pooled = encode_with_raw_clip(
                 negative_prompt, negative_prompt_2, 
                 tokenizer, tokenizer2, text_encoder, text_encoder2, 
-                device, False, None, None, clip_skip
+                device, None, None, None, clip_skip
             )
         
         # Combine for CFG
