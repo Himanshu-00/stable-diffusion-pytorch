@@ -272,16 +272,15 @@ def encode_prompt_sdxl(
     clip_skip=None,
 ):
     """
-    SDX/SD1.x prompt encoding with automatic weight detection
+    Enhanced SDXL/SD1.x prompt encoding with per-prompt weight detection
     
-    Automatically detects weights in prompts and routes to appropriate processing:
-    - No weights detected → Raw CLIP tokenizer (fast, consistent)
-    - Weights detected → Custom weighted processing (full weight support)
+    Processes positive and negative prompts separately:
+    - No weights detected → Raw CLIP tokenizer (preserves bright colors)
+    - Weights detected → Custom weighted processing (ComfyUI method)
     """
     
     def _detect_weights_in_prompts(*texts):
-        """Ultra-precise weight detection to avoid false positives"""
-        # More restrictive: must be in parentheses with word:number format
+        """Ultra-precise weight detection"""
         weight_pattern = r'\([^:)]+:[0-9]*\.?[0-9]+\)'
         
         for text in texts:
@@ -297,36 +296,84 @@ def encode_prompt_sdxl(
                     continue
                 matches = re.findall(weight_pattern, str(t))
                 for match in matches:
-                    # Additional validation - ensure it's in parentheses and reasonable
                     if match.startswith('(') and ':' in match:
                         parts = match.strip('()').split(':')
                         if len(parts) == 2:
                             try:
                                 weight_val = float(parts[1])
-                                # Reasonable weight range for attention weights
-                                if 0.05 <= weight_val <= 20.0:
+                                # Only detect as weighted if weight is NOT 1.0
+                                if 0.05 <= weight_val <= 20.0 and weight_val != 1.0:
                                     return True
                             except ValueError:
                                 continue
         return False
     
-    # Automatic weight detection
-    weights_detected = _detect_weights_in_prompts(prompt, prompt_2, negative_prompt, negative_prompt_2)
+    # Prepare batch prompts
+    batch_size = len(prompt) if isinstance(prompt, list) else 1
+    prompt = [prompt] if isinstance(prompt, str) else prompt
+    prompt_2 = [prompt_2] if isinstance(prompt_2, str) else prompt_2
     
-    if weights_detected:
-        return encode_with_weights(
+    if len(prompt_2) != len(prompt):
+        prompt_2 = prompt_2 * len(prompt) if len(prompt_2) == 1 else prompt_2[:len(prompt)]
+    
+    # Separate detection for positive and negative prompts
+    positive_has_weights = _detect_weights_in_prompts(prompt, prompt_2)
+    negative_has_weights = _detect_weights_in_prompts(negative_prompt, negative_prompt_2)
+    
+    # Process positive prompts
+    if positive_has_weights:
+        positive_embeds, positive_pooled = encode_with_weights(
             prompt, prompt_2, tokenizer, tokenizer2, 
             text_encoder, text_encoder2, device, 
-            do_classifier_free_guidance, negative_prompt, 
-            negative_prompt_2, clip_skip
+            False, None, None, clip_skip  # No CFG for positive only
         )
     else:
-        return encode_with_raw_clip(
+        positive_embeds, positive_pooled = encode_with_raw_clip(
             prompt, prompt_2, tokenizer, tokenizer2, 
             text_encoder, text_encoder2, device, 
-            do_classifier_free_guidance, negative_prompt, 
-            negative_prompt_2, clip_skip
+            False, None, None, clip_skip  # No CFG for positive only
         )
+    
+    # Handle CFG
+    if do_classifier_free_guidance:
+        # Prepare negative prompts
+        if negative_prompt is None:
+            negative_prompt = [""] * batch_size
+        elif isinstance(negative_prompt, str):
+            negative_prompt = [negative_prompt] * batch_size
+        
+        if negative_prompt_2 is None:
+            negative_prompt_2 = negative_prompt.copy()
+        elif isinstance(negative_prompt_2, str):
+            negative_prompt_2 = [negative_prompt_2] * batch_size
+        
+        # Process negative prompts
+        if negative_has_weights:
+            negative_embeds, negative_pooled = encode_with_weights(
+                negative_prompt, negative_prompt_2, 
+                tokenizer, tokenizer2, text_encoder, text_encoder2, 
+                device, False, None, None, clip_skip
+            )
+        else:
+            negative_embeds, negative_pooled = encode_with_raw_clip(
+                negative_prompt, negative_prompt_2, 
+                tokenizer, tokenizer2, text_encoder, text_encoder2, 
+                device, False, None, None, clip_skip
+            )
+        
+        # Combine for CFG
+        final_embeds = torch.cat([negative_embeds, positive_embeds])
+        
+        # Handle pooled embeddings
+        if positive_pooled is not None and negative_pooled is not None:
+            final_pooled = torch.cat([negative_pooled, positive_pooled])
+        else:
+            final_pooled = None
+    else:
+        final_embeds = positive_embeds
+        final_pooled = positive_pooled
+    
+    return final_embeds, final_pooled
 
 def encode_with_raw_clip(
     prompt, prompt_2, tokenizer, tokenizer2, 
@@ -440,10 +487,10 @@ def encode_with_weights(
     negative_prompt_2, clip_skip
 ):
     """
-    Weighted processing - your existing logic with weights
+    Enhanced weighted processing using ComfyUI's interpolation method
     """
-
-    # Detect if this is SD1.x (same tokenizer/encoder passed twice)
+    
+    # Detect model type
     is_sd1x = (tokenizer is tokenizer2) and (text_encoder is text_encoder2)
     
     # Prepare batch prompts
@@ -454,111 +501,128 @@ def encode_with_weights(
     if len(prompt_2) != len(prompt):
         prompt_2 = prompt_2 * len(prompt) if len(prompt_2) == 1 else prompt_2[:len(prompt)]
     
-    def apply_token_weights(embeddings, token_weight_pairs, device):
-        """Apply weights selectively to individual tokens"""
-        weights = [weight for _, weight in token_weight_pairs]
-
-        # Create weight tensor
-        weights_tensor = torch.tensor(weights, device=device, dtype=embeddings.dtype)
+    def create_empty_tokens(tokenizer, max_length=77):
+        """Create empty/baseline tokens for interpolation"""
+        if hasattr(tokenizer, 'pad_token_id'):
+            empty_token_id = tokenizer.pad_token_id
+        else:
+            empty_token_id = 0  # fallback
         
-        # Apply weights per-token instead of globally
-        # Shape: [batch, seq_len, embed_dim] * [batch, seq_len, 1]
-        weights_tensor = weights_tensor.unsqueeze(0).unsqueeze(-1)  # [1, 77, 1]
+        return torch.full((1, max_length), empty_token_id, dtype=torch.long, device=device)
+    
+    def apply_weights(embeddings, empty_embeddings, token_weights, device):
+        """
+        Apply weights using interpolation method:
+        weighted = (original - empty) * weight + empty
+        """
+        # Ensure token_weights has correct shape
+        if len(token_weights) != embeddings.shape[1]:
+            # Pad or truncate weights to match embedding sequence length
+            if len(token_weights) < embeddings.shape[1]:
+                token_weights.extend([1.0] * (embeddings.shape[1] - len(token_weights)))
+            else:
+                token_weights = token_weights[:embeddings.shape[1]]
         
-        # This should give proper per-token amplification
-        result = embeddings * weights_tensor
+        weights_tensor = torch.tensor(token_weights, device=device, dtype=embeddings.dtype)
+        weights_tensor = weights_tensor.unsqueeze(0).unsqueeze(-1)  # [1, seq_len, 1]
         
-        return result
+        # Interpolation formula
+        weighted_embeddings = (embeddings - empty_embeddings) * weights_tensor + empty_embeddings
+        
+        return weighted_embeddings
+    
+    def process_encoder_with_weights(token_weight_pairs, text_encoder, is_clip_l=True):
+        """Process a single encoder with proper weight handling"""
+        batch_embeddings = []
+        
+        # Get max sequence length
+        max_len = max(len(pairs) for pairs in token_weight_pairs)
+        
+        # Create empty tokens for baseline
+        empty_tokens = create_empty_tokens(tokenizer if is_clip_l else tokenizer2, max_len)
+        
+        # Get empty embeddings
+        with torch.no_grad():
+            if is_clip_l:
+                empty_output = text_encoder(empty_tokens, clip_skip=clip_skip, output_hidden_states=True)
+                empty_embeddings = empty_output if isinstance(empty_output, torch.Tensor) else empty_output[0]
+            else:
+                empty_embeddings, _ = text_encoder2(empty_tokens, output_hidden_states=True)
+        
+        for pairs in token_weight_pairs:
+            # Extract tokens and weights
+            tokens = [pair[0] for pair in pairs]
+            weights = [pair[1] for pair in pairs]
+            
+            # Pad tokens to max_len
+            while len(tokens) < max_len:
+                tokens.append(tokenizer.pad_token_id if hasattr(tokenizer, 'pad_token_id') else 0)
+                weights.append(1.0)
+            
+            token_ids = torch.tensor(tokens, dtype=torch.long).unsqueeze(0).to(device)
+            
+            # Get embeddings
+            with torch.no_grad():
+                if is_clip_l:
+                    output = text_encoder(token_ids, clip_skip=clip_skip, output_hidden_states=True)
+                    embeddings = output if isinstance(output, torch.Tensor) else output[0]
+                    pooled = None
+                else:
+                    embeddings, pooled = text_encoder2(token_ids, output_hidden_states=True)
+            
+            # Apply weights 
+            weighted_embeddings = apply_weights(embeddings, empty_embeddings, weights, device)
+            batch_embeddings.append(weighted_embeddings)
+        
+        return torch.cat(batch_embeddings, dim=0), pooled
     
     def process_weighted_batch(prompts_l, prompts_g, is_negative=False):
-        """Process batch using weighted tokenizers"""
-        all_clip_l_embeddings = []
-        all_clip_g_embeddings = []
-        all_pooled_embeddings = []
+        """Enhanced batch processing with proper weight handling"""
+        
+        # Tokenize all prompts
+        clip_l_token_weights = []
+        clip_g_token_weights = []
         
         for i in range(len(prompts_l)):
             prompt_l = prompts_l[i]
-            
             clip_l_result = tokenizer.tokenize_with_weights(prompt_l)
-
+            
             if is_sd1x:
-                # SD1.x: Direct result format
-                if is_sd1x:
-                    # SD1.x: Handle multiple possible formats
-                    if isinstance(clip_l_result, dict) and 'l' in clip_l_result:
-                        # Format: {'l': [(token, weight), ...], 'g': [...]}
-                        clip_l_token_weights = clip_l_result['l']
-                    elif isinstance(clip_l_result, list):
-                        # Format: [(token, weight), (token, weight), ...]
-                        clip_l_token_weights = clip_l_result
-                    else:
-                        raise ValueError(f"Unexpected SD1.x tokenizer format: {type(clip_l_result)}")
+                if isinstance(clip_l_result, dict) and 'l' in clip_l_result:
+                    clip_l_token_weights.append(clip_l_result['l'])
+                elif isinstance(clip_l_result, list):
+                    clip_l_token_weights.append(clip_l_result)
+                else:
+                    raise ValueError(f"Unexpected tokenizer format: {type(clip_l_result)}")
             else:
-                # SDXL: Dict format with 'l' and 'g' keys
                 prompt_g = prompts_g[i]
                 clip_g_result = tokenizer2.tokenize_with_weights(prompt_g)
-                clip_l_token_weights = clip_l_result['l']
-                clip_g_token_weights = clip_g_result['g']
-            
-            # Convert to tensors
-            clip_l_ids = torch.tensor([t[0] for t in clip_l_token_weights], 
-                                     dtype=torch.long).unsqueeze(0).to(device)
-            
-            
-            # Process with embedders
-            with torch.no_grad():
-                clip_l_output = text_encoder(clip_l_ids, clip_skip=clip_skip, output_hidden_states=True)
-            
-            # Handle embedder output format
-            if isinstance(clip_l_output, torch.Tensor):
-                clip_l_embeddings = clip_l_output
-            else:
-                clip_l_embeddings = clip_l_output
-            
-            # Apply weights
-            weighted_clip_l = apply_token_weights(clip_l_embeddings, clip_l_token_weights, device)
-
-            all_clip_l_embeddings.append(weighted_clip_l)
+                clip_l_token_weights.append(clip_l_result['l'])
+                clip_g_token_weights.append(clip_g_result['g'])
         
-            if is_sd1x:
-                # SD1.x: No second encoder
-                all_pooled_embeddings.append(None)
-            else:
-                # SDXL: Process second encoder
-                clip_g_ids = torch.tensor(
-                    [t[0] for t in clip_g_token_weights], 
-                    dtype=torch.long
-                ).unsqueeze(0).to(device)
-                
-                with torch.no_grad():
-                    clip_g_penultimate, clip_g_pooled = text_encoder2(clip_g_ids, output_hidden_states=True)
-                
-                weighted_clip_g = apply_token_weights(clip_g_penultimate, clip_g_token_weights, device)
-                all_clip_g_embeddings.append(weighted_clip_g)
-                all_pooled_embeddings.append(clip_g_pooled)
-    
-        batch_clip_l = torch.cat(all_clip_l_embeddings, dim=0)
-
+        # Process CLIP-L
+        clip_l_embeddings, _ = process_encoder_with_weights(clip_l_token_weights, text_encoder, is_clip_l=True)
+        
         if is_sd1x:
-            #   batch_clip_l = torch.cat(all_clip_l_embeddings, dim=0)
-              return batch_clip_l, None
+            return clip_l_embeddings, None
         else:
-            #   batch_clip_l = torch.cat(all_clip_l_embeddings, dim=0)
-              batch_clip_g = torch.cat(all_clip_g_embeddings, dim=0)
-              batch_pooled = torch.cat(all_pooled_embeddings, dim=0)
-        
-        combined_embeddings = torch.cat([batch_clip_l, batch_clip_g], dim=-1)
-        return combined_embeddings, batch_pooled
+            # Process CLIP-G
+            clip_g_embeddings, pooled_output = process_encoder_with_weights(clip_g_token_weights, text_encoder2, is_clip_l=False)
+            
+            # Combine embeddings
+            combined_embeddings = torch.cat([clip_l_embeddings, clip_g_embeddings], dim=-1)
+            return combined_embeddings, pooled_output
     
+    # Process positive prompts
     if is_sd1x:
-            # Process positive prompts
-            prompt_embeds, _ = process_weighted_batch(prompt, prompt_2, is_negative=False)
+        prompt_embeds, _ = process_weighted_batch(prompt, prompt_2, is_negative=False)
+        pooled_prompt_embeds = None
     else:
-            # Process positive prompts
-            prompt_embeds, pooled_prompt_embeds = process_weighted_batch(prompt, prompt_2, is_negative=False)
+        prompt_embeds, pooled_prompt_embeds = process_weighted_batch(prompt, prompt_2, is_negative=False)
     
-    # Handle CFG
+    # Handle Classifier-Free Guidance
     if do_classifier_free_guidance:
+        # Prepare negative prompts
         if negative_prompt is None:
             negative_prompt = [""] * batch_size
         elif isinstance(negative_prompt, str):
@@ -569,22 +633,16 @@ def encode_with_weights(
         elif isinstance(negative_prompt_2, str):
             negative_prompt_2 = [negative_prompt_2] * batch_size
         
+        # Process negative prompts
         negative_prompt_embeds, negative_pooled = process_weighted_batch(
             negative_prompt, negative_prompt_2, is_negative=True
         )
         
-        if is_sd1x:
-             prompt_embeds = torch.cat([negative_prompt_embeds, prompt_embeds])
-             return prompt_embeds, None
-        else:
-             prompt_embeds = torch.cat([negative_prompt_embeds, prompt_embeds])
-             pooled_prompt_embeds = torch.cat([negative_pooled, pooled_prompt_embeds])
-    else:
-        # No CFG
-        if is_sd1x:
-            return prompt_embeds, None  # Always return tuple
-        else:
-            return prompt_embeds, pooled_prompt_embeds
+        # Concatenate for CFG
+        prompt_embeds = torch.cat([negative_prompt_embeds, prompt_embeds])
+        
+        if not is_sd1x:
+            pooled_prompt_embeds = torch.cat([negative_pooled, pooled_prompt_embeds])
     
     return prompt_embeds, pooled_prompt_embeds
 

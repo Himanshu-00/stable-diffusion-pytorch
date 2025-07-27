@@ -83,7 +83,7 @@ def main():
         DEVICE = "mps"
     print(f"Using device: {DEVICE}")
 
-    model_file = "stable_diffusion/checkpoints/Juggernaut-XL_v9_RunDiffusionPhoto_v2.safetensors"
+    model_file = "stable_diffusion/checkpoints/juggernautXL_v8Rundiffusion.safetensors"
     models = model_loader.preload_models_from_standard_weights(model_file, DEVICE, dtype=torch.float16)
     isSDXL = model_converter.detect_sdxl_checkpoint(model_file)
 
