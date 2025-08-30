@@ -1,6 +1,6 @@
 # Stable_diffusion_pytorch
 
-<!-- [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Himanshu-00/stable-diffusion-pytorch/blob/version-2/output/demo/demo_file.ipynb) -->
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Himanshu-00/stable-diffusion-pytorch/blob/version-2/output/demo/demo_file.ipynb)
 
 Yet another PyTorch implementation of [Stable Diffusion](https://stability.ai/blog/stable-diffusion-public-release) & A clean, modular PyTorch implementation of Stable Diffusion, now extended to support SDXL.
 

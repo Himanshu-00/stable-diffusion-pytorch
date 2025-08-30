@@ -29,6 +29,8 @@ def generate(
     crops_coords_top_left: Tuple[int, int] = (0, 0),
     target_size: Optional[Tuple[int, int]] = (1024, 1024),
     dtype: torch.dtype = torch.float16,
+    # show_preview=False,  # NEW: Enable live preview
+    # preview_interval=1,  # NEW: Show every N steps
 ):
     with torch.no_grad():
         # Validate inputs
@@ -176,6 +178,16 @@ def generate(
         else:
             latents = torch.randn(latents_shape, generator=generator, device=device, dtype=dtype)
 
+
+        # # OpenCV window if requested
+        # if show_preview:
+        #     import cv2
+        #     window_name = "Stable Diffusion - Live Generation"
+        #     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+        #     cv2.resizeWindow(window_name, 512, 512)
+            
+        #     # Prepare decoder for preview
+        #     decoder = models['decoder']
        
         # DENOISING LOOP
        
@@ -239,6 +251,65 @@ def generate(
 
             latents = sampler.step(timestep, latents, model_output)
 
+        #     # Show live preview with proper data handling
+        #     if show_preview and (i % preview_interval == 0 or i == len(timesteps) - 1):
+        #         try:
+        #             decoder.to(device, dtype=dtype)
+                    
+        #             # Decode current latents for preview
+        #             with torch.no_grad():
+        #                 preview_latents = latents.clone().to(dtype=dtype)  # Clone to avoid corruption
+        #                 preview_img = decoder(preview_latents)
+                        
+        #                 # CRITICAL: Proper conversion to displayable format
+        #                 # Ensure we're working with float32 first
+        #                 preview_img = preview_img.float()
+                        
+        #                 # Rescale from (-1, 1) to (0, 1)
+        #                 preview_img = (preview_img + 1.0) / 2.0
+                        
+        #                 # Clamp values to valid range
+        #                 preview_img = torch.clamp(preview_img, 0.0, 1.0)
+                        
+        #                 # Convert to (H, W, C) format
+        #                 preview_img = preview_img.permute(0, 2, 3, 1).squeeze(0)
+                        
+        #                 # Convert to numpy and scale to 0-255 range
+        #                 preview_np = preview_img.cpu().numpy()
+        #                 preview_np = (preview_np * 255.0).astype(np.uint8)
+                        
+        #                 # Ensure we have a valid image
+        #                 if preview_np.size > 0 and preview_np.shape[2] == 3:
+        #                     # Convert RGB to BGR for OpenCV
+        #                     preview_bgr = cv2.cvtColor(preview_np, cv2.COLOR_RGB2BGR)
+                            
+        #                     # Add step info text
+        #                     step_text = f"Step {i+1}/{len(timesteps)}"
+        #                     cv2.putText(preview_bgr, step_text, 
+        #                                (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 
+        #                                1, (0, 255, 0), 2)
+                            
+        #                     # Display the image
+        #                     cv2.imshow(window_name, preview_bgr)
+                            
+        #                     # CRITICAL: Process events to prevent blank screen
+        #                     key = cv2.waitKey(1) & 0xFF
+        #                     if key == ord('q'):  # Press 'q' to quit early
+        #                         break
+        #                 else:
+        #                     print(f"Warning: Invalid image at step {i+1}")
+                            
+        #         except Exception as e:
+        #             print(f"Preview error at step {i+1}: {e}")
+        #         finally:
+        #             if idle_device:
+        #                 decoder.to(idle_device)
+
+        # # Close OpenCV window
+        # if show_preview:
+        #     cv2.waitKey(1000)  # Show final result for 1 second
+        #     cv2.destroyAllWindows()
+
         if idle_device:
             diffusion.to(idle_device)
 
@@ -246,6 +317,7 @@ def generate(
         # DECODING
         decoder = models['decoder']
         decoder.to(device, dtype=dtype)
+        latents = latents.to(dtype=dtype)
         images = decoder(latents)
 
         if idle_device:
