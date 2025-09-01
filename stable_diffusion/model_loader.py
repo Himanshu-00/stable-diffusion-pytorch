@@ -53,10 +53,10 @@ def preload_models_from_standard_weights(model_path, device, dtype=torch.float16
     config = get_model_config(sdxl)
 
     # Load core components
-    encoder = VAE_Encoder(sdxl=sdxl).to(device, dtype=dtype)
+    encoder = VAE_Encoder(sdxl=sdxl).to(device, dtype=torch.bfloat16)
     encoder.load_state_dict(state_dict['encoder'], strict=True)
 
-    decoder = VAE_Decoder(sdxl=sdxl).to(device, dtype=dtype)
+    decoder = VAE_Decoder(sdxl=sdxl).to(device, dtype=torch.bfloat16)
     decoder.load_state_dict(state_dict['decoder'], strict=True)
 
     diffusion = UNET(**config['unet']).to(device, dtype=dtype)
@@ -85,12 +85,6 @@ def preload_models_from_standard_weights(model_path, device, dtype=torch.float16
 
         tokenizer2 = SDXLTokenizer()
         models['tokenizer2'] = tokenizer2
-        
-
-    # Ensure all models are in FP16
-    for key in models:
-        if isinstance(models[key], torch.nn.Module):
-            models[key] = models[key].to(dtype=dtype)
 
     return models
 

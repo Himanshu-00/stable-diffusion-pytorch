@@ -569,7 +569,7 @@ class CLIPGEmbedder(nn.Module):
         for param in self.parameters():
             param.requires_grad = False
 
-    def forward(self, tokens, output_hidden_states=None):        
+    def forward(self, tokens, clip_skip=0, output_hidden_states=None):        
         # Full transformer call with position IDs
         output = self.transformer(
             input_ids=tokens,
@@ -578,9 +578,19 @@ class CLIPGEmbedder(nn.Module):
         
         hidden_states = output.hidden_states
         last_hidden_state = output.last_hidden_state
+
+        # clip_skip logic like CLIP-L
+        if clip_skip > 0:
+            # Validate skip depth
+            if clip_skip >= len(hidden_states) - 1:  # -1 because we need at least one layer
+                raise ValueError(f"clip_skip ({clip_skip}) too high for CLIP-G")
+            
+            # Use the same skip logic as CLIP-L
+            penultimate_hidden_state = hidden_states[-clip_skip-2]  # -2 for penultimate equivalent
+        else:
+            # Default behavior: use penultimate layer
+            penultimate_hidden_state = hidden_states[-2] if len(hidden_states) > 1 else last_hidden_state
         
-        
-        penultimate_hidden_state = hidden_states[-2] if len(hidden_states) > 1 else last_hidden_state
         eos_positions = (tokens == self.eos_token_id).int().argmax(dim=-1)
         pooled_output = last_hidden_state[
             torch.arange(last_hidden_state.shape[0]), 

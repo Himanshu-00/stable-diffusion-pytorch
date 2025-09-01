@@ -29,6 +29,7 @@ def generate(
     crops_coords_top_left: Tuple[int, int] = (0, 0),
     target_size: Optional[Tuple[int, int]] = (1024, 1024),
     dtype: torch.dtype = torch.float16,
+    vae_dtype: torch.dtype = torch.bfloat16,
     # show_preview=False,  # NEW: Enable live preview
     # preview_interval=1,  # NEW: Show every N steps
 ):
@@ -155,7 +156,7 @@ def generate(
             # Process input image
             input_image_tensor = input_image.resize((width, height))
             input_image_tensor = np.array(input_image_tensor)
-            input_image_tensor = torch.tensor(input_image_tensor, dtype=dtype, device=device)
+            input_image_tensor = torch.tensor(input_image_tensor, dtype=vae_dtype, device=device)
             input_image_tensor = rescale(input_image_tensor, (0, 255), (-1, 1))
             input_image_tensor = input_image_tensor.unsqueeze(0)
             input_image_tensor = input_image_tensor.permute(0, 3, 1, 2)
@@ -192,7 +193,7 @@ def generate(
         # DENOISING LOOP
        
         diffusion = models['diffusion']
-        diffusion.to(device, dtype=dtype)
+        diffusion.to(device)
         
         timesteps = tqdm(sampler.timesteps)
         for i, timestep in enumerate(timesteps):
@@ -254,11 +255,11 @@ def generate(
         #     # Show live preview with proper data handling
         #     if show_preview and (i % preview_interval == 0 or i == len(timesteps) - 1):
         #         try:
-        #             decoder.to(device, dtype=dtype)
+        #             decoder.to(device, dtype=vae_dtype)
                     
         #             # Decode current latents for preview
         #             with torch.no_grad():
-        #                 preview_latents = latents.clone().to(dtype=dtype)  # Clone to avoid corruption
+        #                 preview_latents = latents.clone().to(dtype=vae_dtype)  # Clone to avoid corruption
         #                 preview_img = decoder(preview_latents)
                         
         #                 # CRITICAL: Proper conversion to displayable format
@@ -316,12 +317,13 @@ def generate(
        
         # DECODING
         decoder = models['decoder']
-        decoder.to(device, dtype=dtype)
-        latents = latents.to(dtype=dtype)
+        decoder.to(device)
+        latents = latents.to(dtype=vae_dtype)
         images = decoder(latents)
 
         if idle_device:
             decoder.to(idle_device)
+
 
         images = rescale(images, (-1, 1), (0, 255), clamp=True)
         images = images.permute(0, 2, 3, 1)
@@ -424,13 +426,13 @@ def encode_prompt_sdxl(
             negative_embeds, negative_pooled = encode_with_weights(
                 negative_prompt, negative_prompt_2, 
                 tokenizer, tokenizer2, text_encoder, text_encoder2, 
-                device, None, None, None, clip_skip
+                device, False, None, None, clip_skip
             )
         else:
             negative_embeds, negative_pooled = encode_with_raw_clip(
                 negative_prompt, negative_prompt_2, 
                 tokenizer, tokenizer2, text_encoder, text_encoder2, 
-                device, None, None, None, clip_skip
+                device, False, None, None, clip_skip
             )
         
         # Combine for CFG
@@ -508,7 +510,7 @@ def encode_with_raw_clip(
             ).input_ids.to(device)
             
             with torch.no_grad():
-                clip_g_penultimate, clip_g_pooled = text_encoder2(tokens_g, output_hidden_states=True)
+                clip_g_penultimate, clip_g_pooled = text_encoder2(tokens_g, clip_skip=clip_skip, output_hidden_states=True)
             # SDXL: dual encoder logic
             combined_embeddings = torch.cat([clip_l_embeddings, clip_g_penultimate], dim=-1)
         
@@ -619,7 +621,7 @@ def encode_with_weights(
                 empty_output = text_encoder(empty_tokens, clip_skip=clip_skip, output_hidden_states=True)
                 empty_embeddings = empty_output if isinstance(empty_output, torch.Tensor) else empty_output[0]
             else:
-                empty_embeddings, _ = text_encoder2(empty_tokens, output_hidden_states=True)
+                empty_embeddings, _ = text_encoder2(empty_tokens, clip_skip=clip_skip, output_hidden_states=True)
         
         for pairs in token_weight_pairs:
             # Extract tokens and weights
@@ -640,7 +642,7 @@ def encode_with_weights(
                     embeddings = output if isinstance(output, torch.Tensor) else output[0]
                     pooled = None
                 else:
-                    embeddings, pooled = text_encoder2(token_ids, output_hidden_states=True)
+                    embeddings, pooled = text_encoder2(token_ids, clip_skip=clip_skip, output_hidden_states=True)
             
             # Apply weights 
             weighted_embeddings = apply_weights(embeddings, empty_embeddings, weights, device)

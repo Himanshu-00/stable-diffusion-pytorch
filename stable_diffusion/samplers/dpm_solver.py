@@ -13,7 +13,7 @@ class DPMSolverMultistepScheduler():
         num_train_timesteps: int = 1000,
         beta_start: float = 0.00085,
         beta_end: float = 0.012,
-        solver_order: int = 2,
+        solver_order: int = 3,
         algorithm_type: str = "dpmsolver++",
         lower_order_final: bool = True,
         euler_at_final: bool = False,

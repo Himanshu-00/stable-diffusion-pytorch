@@ -83,6 +83,7 @@ def main():
         DEVICE = "mps"
     print(f"Using device: {DEVICE}")
 
+
     model_file = "stable_diffusion/checkpoints/Juggernaut-XL_v9_RunDiffusionPhoto_v2.safetensors"
     models = model_loader.preload_models_from_standard_weights(model_file, DEVICE, dtype=torch.float16)
     isSDXL = model_converter.detect_sdxl_checkpoint(model_file)
@@ -91,11 +92,11 @@ def main():
     # prompt = "An orange cat playing with tennis balls in a green backyard, highly detailed, realistic, ultra sharp, cinematic, 100mm lens, 8k resolution."
     # prompt = "A close up of man posing for a picture on a tropical island holding a coctail in hand, highly detailed, realistic, ultra sharp, cinematic, 100mm lens, 8k resolution."
     # prompt = "instagram photo, front shot, portrait photo of a 24 y.o woman, wearing dress, beautiful face, cinematic shot, dark shot"
-    prompt = "1girl,face,curly hair,sky blue hair,white background,"
-    uncond_prompt = "worst quality,low quality,normal quality,lowres,watermark," 
-    # uncond_prompt = "(worst quality:2),(low quality:2),(normal quality:2),lowres,watermark," 
-    do_cfg = True
-    cfg_scale = 7  # min: 1, max: 14
+    prompt = "close-up,portrait,Line art,splatter,minimalist elegance,beautiful blue enchantress rose fairy,Tang Dynasty royal face ancient style beauty,high-definition fashion photography,high-end,ambiguous atmosphere,a woman with blue flowers on her face,in the style of anime art,luminous and dreamlike scenes,yanjun cheng,made of crystals,light white and silver,john pitre,cute and dreamy,in the style of chinapunk,romantic scenery,animated gifs,photo-realistic hyperbole,dark white and dark beige,heistcore,strip painting,Bright background,detailed depiction,Delicate face and costume details,lifelike appearance HD 16K,cinematic lighting,chiaroscuro,Arbitrary view,Medium Shot,hyperrealism,Hollywoodtyle,photography,HD Details,Detail Expression,Rich Details,"
+    # uncond_prompt = "worst quality,low quality,normal quality,lowres,watermark," 
+    uncond_prompt = "cgi, illustration, cartoon, deformed, distorted, disfigured, poorly drawn, bad anatomy, wrong anatomy,ugly, deformed, blurry,Noisy,log,text,watermark" 
+    do_cfg = False
+    cfg_scale = 3  # min: 1, max: 14
 
     # IMAGE TO IMAGE
     # prompt = "1girl,face,curly red hair,"
@@ -112,7 +113,8 @@ def main():
     #As of now, DPM-Solver++ does not have support for img2img functionality. Please use ddpm for img2img
     sampler = "dpm_solver++"  
     num_inference_steps = 20
-    seed = 64244261092
+    seed = 225434355
+
 
 
 
@@ -133,7 +135,7 @@ def main():
             clip_skip=0,
             width=1024 if isSDXL else 512,
             height=1024 if isSDXL else 512,
-            dtype=torch.float16,
+            dtype=torch.float16
     )
     else:
         output_image = pipeline.generate(
@@ -150,9 +152,10 @@ def main():
             device=DEVICE,
             idle_device="cpu",
             clip_skip=0,
-            width=1024 if isSDXL else 512,
-            height=1024 if isSDXL else 512,
+            width=896 if isSDXL else 512,
+            height=1216 if isSDXL else 512,
             dtype=torch.float16,
+            use_karras=True
         )
 
    

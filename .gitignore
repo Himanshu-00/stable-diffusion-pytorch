@@ -13,9 +13,11 @@ stable_diffusion/checkpoints/sd-v1-5-inpainting.ckpt
 stable_diffusion/checkpoints/majicmixRealistic_v7.safetensors
 stable_diffusion/checkpoints/Juggernaut-XL_v9_RunDiffusionPhoto_v2.safetensors
 stable_diffusion/checkpoints/juggernautXL_v8Rundiffusion.safetensors
+stable_diffusion/checkpoints/sdxl10ArienmixxlAsian_v45Pruned.safetensors
 stable_diffusion/__pycache__
 stable_diffusion/samplers/__pycache__
 output/results/o9.png
 output/results/o10.png
+output/results_test
 stable_diffusion/o116.png
 stable_diffusion/image_mask.png
